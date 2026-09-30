@@ -38,7 +38,7 @@ def supports(a: Placement, a_size: tuple[int, int, int], b: Placement, b_size: t
     return (a.z + a_size[2] == b.z and not (a_x2 < b_x1 or a_x1 > b_x2 or a_y2 < b_y1 or a_y1 > b_y2))
 
 def is_valid_placement(truck: Truck, packages: dict[str, Package], state: State) -> bool:
-    if set(state.pllacements) != set(packages):
+    if set(state.placements) != set(packages):
         return False
 
     # package, placement, dimeonsions
@@ -67,7 +67,7 @@ def is_valid_placement(truck: Truck, packages: dict[str, Package], state: State)
         return False
 
     # check if overlaps
-    for i (_, a, a_size) in enumerate(placed_packages):
+    for i, (_, a, a_size) in enumerate(placed_packages):
         for _, b, b_size in placed_packages[i + 1:]:
             if overlaps(a, a_size, b, b_size):
                 return False
@@ -79,7 +79,7 @@ def is_valid_placement(truck: Truck, packages: dict[str, Package], state: State)
             continue
 
         supporting_packages = []
-        for lower_package, lower, lower_size in placed:
+        for lower_package, lower, lower_size in placed_packages:
             # ignore if package is the same
             if lower is upper:
                 continue
