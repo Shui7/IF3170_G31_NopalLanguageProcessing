@@ -35,7 +35,7 @@ def supports(a: Placement, a_size: tuple[int, int, int], b: Placement, b_size: t
     b_x1, b_y1 = b.x, b.y
     b_x2, b_y2 = b.x + b_size[0], b.y + b_size[1]
 
-    return (a.z + a_size[2] == b.z and not (a_x2 < b_x1 or a_x1 > b_x2 or a_y2 < b_y1 or a_y1 > b_y2))
+    return (a.z + a_size[2] == b.z and not (a_x2 <= b_x1 or a_x1 >= b_x2 or a_y2 <= b_y1 or a_y1 >= b_y2))
 
 def is_valid_placement(truck: Truck, packages: dict[str, Package], state: State) -> bool:
     if set(state.placements) != set(packages):
