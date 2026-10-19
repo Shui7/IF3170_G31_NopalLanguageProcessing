@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1100</width>
-    <height>690</height>
+    <width>1200</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,6 +29,12 @@
     </property>
     <item>
      <widget class="QSplitter" name="mainSplitter">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
       </property>
@@ -37,6 +43,9 @@
       </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="handleWidth">
+       <number>10</number>
       </property>
       <property name="childrenCollapsible">
        <bool>false</bool>
@@ -246,6 +255,11 @@
                <string>fragile</string>
               </property>
              </column>
+             <column>
+              <property name="text">
+               <string>ETA</string>
+              </property>
+             </column>
             </widget>
            </item>
            <item>
@@ -371,7 +385,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QSplitter" name="rightSplitter">
+      <widget class="QSplitter" name="middleSplitter">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>1</horstretch>
@@ -554,6 +568,9 @@
         <property name="spacing">
          <number>4</number>
         </property>
+        <property name="sizeConstraint">
+         <enum>QLayout::SetDefaultConstraint</enum>
+        </property>
         <property name="leftMargin">
          <number>16</number>
         </property>
@@ -586,6 +603,12 @@
         </item>
         <item>
          <widget class="QScrollArea" name="plotFrame">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="frameShape">
            <enum>QFrame::NoFrame</enum>
           </property>
@@ -601,7 +624,7 @@
              <x>0</x>
              <y>0</y>
              <width>248</width>
-             <height>634</height>
+             <height>664</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="plotContentLayout">
