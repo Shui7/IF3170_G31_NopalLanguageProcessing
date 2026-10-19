@@ -160,3 +160,67 @@ def sideways_move(truck: Truck, packages: dict[str, Package], initial_state: Sta
         "duration_seconds": perf_counter() - start,
         "history": history,
     }
+
+
+def random_restart(truck: Truck, packages: dict[str, Package],initial_state: State | None = None, max_restarts: int = 10,max_iterations: int | None = None,) -> dict:
+    if isinstance(max_restarts, bool) or not isinstance(max_restarts, int):
+        raise TypeError("max_restarts harus berupa bilangan integer")
+    if max_restarts < 0:
+        raise ValueError("max_restarts harus berupa bilangan integer yang tidak negatif")
+    if max_iterations is not None:
+        if isinstance(max_iterations, bool) or not isinstance(max_iterations, int):
+            raise TypeError("max_iterations harus berupa bilangan integer")
+        if max_iterations < 0:
+            raise ValueError("max_iterations harus berupa bilangan integer yang tidak negatif")
+
+    start = perf_counter()
+    runs = []
+    history = []
+    iterations_per_restart = []
+    total_iterations = 0
+    accepted_moves = 0
+    best_state = None
+    best_value = float("-inf")
+    best_restart = 0
+    best_value_so_far = float("-inf")
+
+    for restart in range(max_restarts + 1):
+        run_initial_state = initial_state if restart == 0 else None
+        result = steepest_ascent(truck, packages, run_initial_state, max_iterations)
+        runs.append({"restart": restart, **result})
+        iterations_per_restart.append(result["iterations"])
+
+        if best_state is None or result["final_value"] > best_value:
+            best_state = State(result["final_state"].placements.copy())
+            best_value = result["final_value"]
+            best_restart = restart
+
+        for record in result["history"]:
+            best_value_so_far = max(best_value_so_far, record["current_value"])
+            history.append({
+                **record,
+                "iteration": total_iterations + record["iteration"],
+                "iteration_in_restart": record["iteration"],
+                "restart": restart,
+                "best_value": best_value_so_far,
+            })
+
+        total_iterations += result["iterations"]
+        accepted_moves += result["accepted_moves"]
+
+    return {
+        "initial_state": State(runs[0]["initial_state"].placements.copy()),
+        "final_state": best_state,
+        "initial_value": runs[0]["initial_value"],
+        "final_value": best_value,
+        "iterations": total_iterations,
+        "accepted_moves": accepted_moves,
+        "restarts": len(runs) - 1,
+        "max_restarts": max_restarts,
+        "iterations_per_restart": iterations_per_restart,
+        "best_restart": best_restart,
+        "stop_reason": "max_restarts",
+        "duration_seconds": perf_counter() - start,
+        "history": history,
+        "runs": runs,
+    }
