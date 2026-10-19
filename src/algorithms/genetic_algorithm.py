@@ -1,10 +1,14 @@
 from src.model import Package, Truck, Placement, State, Orientation
 from src.moves import generateRandomState
-from src.geometry import score
+from src.geometry import score, is_valid_placement
 import math
 import random
 
-def genetic_algorithm(truck: Truck, packages: dict[str, Package], population_count: int, iteration_count: int) -> State:
+def genetic_algorithm(truck: Truck, packages: dict[str, Package], population_count: int, iteration_count: int, maxList: list[float], avgList: list[float]) -> State:
+    result = State(placements={})
+    isResultValid = False
+    resultValue = float('-inf')
+    
     # Generate initial population
     population = [generateRandomState(truck, packages) for _ in range(population_count)]
 
@@ -13,9 +17,27 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], population_cou
         # Obtain values for each state
         values = [0.0 for _ in range(population_count)] 
         total_value = 0
+
         for i in range(population_count):
             values[i] = score(truck, packages, population[i])
             total_value += values[i]
+            # Check potential valid result
+            if resultValue < values[i]:
+                isPotentialValid = is_valid_placement(truck, packages, population[i])
+                if not isResultValid or (isResultValid and isPotentialValid):
+                    result = population[i]
+                    isResultValid = isPotentialValid
+                    resultValue = values[i]
+
+        # Populate maxList and avgList
+        index_highest = -1
+        highest_value = float('-inf')
+        for i in range(population_count):
+            if highest_value < values[i]:
+                index_highest = i
+                highest_value = values[i]
+        maxList.append(highest_value)
+        avgList.append(total_value/population_count)
 
         # Normalize values
         min_value = min(values)
@@ -35,7 +57,7 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], population_cou
         # Cross-over
         crossover: list[State] = []
         for _ in range(math.floor(population_count/2)):
-            offsprings: list[State] = [State(), State()]
+            offsprings: list[State] = [State(placements={}), State(placements={})]
 
             # Pick 2 parents from population with weight from fitness value
             parents = random.choices(population, fitness, k=2)
@@ -54,32 +76,28 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], population_cou
 
         # If population odd, add state with highest fitness value to offspring to maintain population_count
         if population_count % 2 == 1:
-            index_highest = -1
-            highest_value = float('-inf')
-            for i in range(population_count):
-                if highest_value < values[i]:
-                    index_highest = i
-                    highest_value = values[i]
-
             crossover.append(population[index_highest])
 
         # Mutation (50/50 happends)
-        for i in range(population_count):
-            rand = random.random()
-            if rand < 0.5:
-                # move randomly, to be implemented
-                # for now, remove a placement
-                package_id = random.choice(crossover[i].placements)
-                crossover[i].placements[package_id] = None
+        # for i in range(population_count):
+        #     rand = random.random()
+        #     if rand < 0.5:
+        #         # move randomly, to be implemented
+        #         # for now, remove a placement
+        #         package_ids = list(crossover[i].placements)
+        #         if package_ids:
+        #             package_id = random.choice(package_ids)
+        #             crossover[i].placements[package_id] = None
 
         population = crossover
 
-    index_highest = -1
-    highest_value = float('-inf')
     for i in range(population_count):
         value = score(truck, packages, population[i])
-        if highest_value < value:
-            index_highest = i
-            highest_value = value
+        if resultValue < value:
+            isPotentialValid = is_valid_placement(truck, packages, population[i])
+            if not isResultValid or (isResultValid and isPotentialValid):
+                result = population[i]
+                isResultValid = isPotentialValid
+                resultValue = value
 
-    return population[index_highest]
+    return result
