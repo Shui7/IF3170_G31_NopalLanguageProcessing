@@ -1,4 +1,5 @@
 import random
+import math
 from time import perf_counter
 from src.model import *
 from src.geometry import *
@@ -47,7 +48,7 @@ def simulated_annealing(truck: Truck, packages: dict[str, Package], initial_stat
             else:
                 probability = math.exp(delta / temperature)
 
-            if random.Random() < probability:
+            if random.random() < probability:
                 current_state = neighbor
                 current_value = neighbor_value
 
