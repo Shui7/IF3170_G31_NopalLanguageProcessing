@@ -55,8 +55,11 @@ def generate_neighbor(truck: Truck, packages: dict[str, Package], state: State):
     # get all current packages available
     package_ids = list(placements.keys())
 
-    # random decision devided by swap, move, rotate
-    move = random.choice(["swap", "move", "rotate"])
+    if not package_ids:
+        return State(placements)
+
+    move_types = ["swap", "move", "rotate"] if len(package_ids) >= 2 else ["move", "rotate"]
+    move = random.choice(move_types)
 
     # swap two packages
     # by swapping its coordinates and orientation
