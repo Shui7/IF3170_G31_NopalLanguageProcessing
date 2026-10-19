@@ -203,7 +203,7 @@ def random_restart(truck: Truck, packages: dict[str, Package],initial_state: Sta
                 "iteration": total_iterations + record["iteration"],
                 "iteration_in_restart": record["iteration"],
                 "restart": restart,
-                "best_value": best_value_so_far,
+                "current_value": best_value_so_far,
             })
 
         total_iterations += result["iterations"]

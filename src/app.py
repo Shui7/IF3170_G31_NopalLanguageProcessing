@@ -119,6 +119,10 @@ class MainWindow(QMainWindow):
         self.configuration_widgets = {}
         self.update_algorithm_configuration()
 
+        self.result_algorithm_used = self.findWidget(QLabel, "lblAlgorithmUsed")
+        self.result_configuration_used = self.findWidget(QLabel, "lblConfigurationUsed")
+        self.result_statistic = self.findWidget(QLabel, "lblStatisticDetail")
+
         vLayout = self.visualizer_frame.layout()
         if vLayout is None:
             raise RuntimeError(f"Unable to access visualizer frame layout")
@@ -399,26 +403,13 @@ class MainWindow(QMainWindow):
             algorithm = self.algorithm_choice.currentText()
             configuration = self.read_algorithm_configuration()
             start_time = time.perf_counter()
-            listMax = []
-            listAvg = []
+
+            version = ""
 
             if algorithm == "Genetic Algorithm":
-                final_state = genetic_algorithm(truck, packages, initial_state, configuration["population_count"], configuration["iteration_count"], listMax, listAvg)
-                result = {
-                    "final_state": final_state,
-                    "final_value": score(truck, packages, final_state),
-                    "history": [
-                        {
-                            "iteration": index + 1,
-                            "current_value": value,
-                            "best_value": value,
-                        }
-                        for index, value in enumerate(listMax)
-                    ],
-                }
+                result = genetic_algorithm(truck, packages, initial_state, configuration["population_count"], configuration["iteration_count"])
             elif algorithm == "Simulated Annealing":
                 result = simulated_annealing(truck, packages, initial_state, configuration["temperature"], configuration["cooling_rate"], configuration["max_iterations"])
-                final_state = result["final_state"]
             elif algorithm == "Hill Climbing":
                 version = self.hill_version.currentText()
                 if version == "Steepest Ascent":
@@ -429,41 +420,61 @@ class MainWindow(QMainWindow):
                     result = random_restart(truck, packages, initial_state, configuration["max_restarts"], configuration["max_iterations"])
                 else:
                     result = stochastic(truck, packages, initial_state, max_iterations=configuration["max_iterations"])
-                final_state = result["final_state"]
             else:
                 raise ValueError(f"Unsupported algorithm: {algorithm}")
 
             elapsed = time.perf_counter() - start_time
+            final_state = result["final_state"]
             final_value = result["final_value"]
 
-            configuration_text = ", ".join(
+            configuration_text = "Configuration: " + ", ".join(
                 f"{name} = {value}" for name, value in configuration.items()
             )
 
-            algorithm_label = algorithm
             if algorithm == "Hill Climbing":
-                algorithm_label = f"Hill Climbing ({self.hill_version.currentText()})"
-            self.set_output("valAlgorithmUsed", algorithm_label)
-            self.set_output("valConfiguration", configuration_text)
-            self.set_output("valExecutionTime", f"{elapsed:.4f} seconds")
-            self.set_output("valInitialStateValue", f"{initial_value:.4f}")
-            self.set_output("valFinalStateValue", f"{final_value:.4f}")
+                algorithm_label = f"Algorithm used: Hill Climbing ({version})"
+            else:
+                algorithm_label = f"Algorithm used: {algorithm}"
+
+            statistic = f" Execution time:\t{elapsed:.4f} seconds\n"
+            statistic += f" Initial value:\t{initial_value:.4f}\n"
+            statistic += f" Final value:\t{final_value:.4f}\n"
+
+            if algorithm == "Hill Climbing":
+                if version == "Steepest Ascent":
+                    statistic += f" Iteration count:\t{result["iterations"]}\n"
+                elif version == " Sideways Move":
+                    statistic += f" Iteration count:\t{result["iterations"]}\n"
+                elif version == " Random Restart":
+                    statistic += f" Restart count:\t{result["restarts"]}\n"
+                elif version == "Stochastic":
+                    statistic += f" Iteration count:\t{result["iterations"]}\n"
+            elif algorithm == "Simulated Annealing":
+                statistic += f" Stuck count:\t{result["stagnant_count"]}\n"
+            elif algorithm == "Genetic Algorithm":
+                statistic += f" Population count:\t{result["population_count"]}\n"
+                statistic += f" Iteration count:\t{result["iterations"]}\n"
+
+            self.result_algorithm_used.setText(algorithm_label)
+            self.result_configuration_used.setText(configuration_text)
+            self.result_statistic.setText(statistic)
 
             self.initial_visualizer.set_state(truck, packages, initial_state)
             self.final_visualizer.set_state(truck, packages, final_state)
 
             self.clear_plotters()
-            history = result.get("history", [])
+            history = result["history"]
             iterations = [record["iteration"] for record in history]
-            current_values = [record["current_value"] for record in history]
-            best_values = [
-                record.get("best_value", record["current_value"])
-                for record in history
-            ]
-            self.plotters = [
-                Plotter(iterations, current_values, "Current Score by Iteration", "Iteration", "Current score"),
-                Plotter(iterations,best_values,"Best Score by Iteration","Iteration","Best score"),
-            ]
+
+            self.plotters = []
+            if algorithm != "Genetic Algorithm":
+                self.plotters.append(Plotter(iterations, [record["current_value"] for record in history], "Current Score by Iteration", "Iteration", "Current score"))
+                if algorithm == "Simulated Annealing":
+                    self.plotters.append(Plotter(iterations, [record["exp_delta_over_temp"] for record in history], "e^(Delta(E)/T) by Iteration", "Iteration", "e^(Delta(E)/T)"))
+            else:
+                self.plotters.append(Plotter(iterations, [record["best_value"] for record in history], "Best Value by Iteration", "Iteration", "Best Value"))
+                self.plotters.append(Plotter(iterations, [record["average_value"] for record in history], "Average Value by Iteration", "Iteration", "Avg Value"))
+
             for plotter in self.plotters:
                 self.plot_content_layout.addWidget(plotter)
 
@@ -479,9 +490,6 @@ class MainWindow(QMainWindow):
             QApplication.restoreOverrideCursor()
             self.btn_run.setEnabled(True)
 
-    def set_output(self, name, value):
-        self.findWidget(QLabel, name).setText(value)
-
     def reset_form(self):
         for field in (self.truck_length, self.truck_width, self.truck_height, self.max_capacity):
             field.clear()
@@ -490,14 +498,9 @@ class MainWindow(QMainWindow):
 
         self.file_label.setText("No file has been inserted")
 
-        for name in (
-            "valAlgorithmUsed",
-            "valConfiguration",
-            "valExecutionTime",
-            "valInitialStateValue",
-            "valFinalStateValue",
-        ):
-            self.set_output(name, "")
+        self.result_algorithm_used.setText("Algorithm used:")
+        self.result_configuration_used.setText("Configuration:")
+        self.result_statistic.setText("")
 
         self.last_result = None
 
