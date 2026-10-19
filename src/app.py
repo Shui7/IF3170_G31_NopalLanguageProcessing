@@ -1,8 +1,9 @@
 import time
 import json
 from pathlib import Path
+from typing import TypeVar
 
-from PySide6.QtCore import QFile, QIODevice, Qt
+from PySide6.QtCore import QFile, QIODevice, Qt, QObject
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import (
     QApplication,
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QWidget,
+    QFormLayout
 )
 
 from src.algorithms.genetic_algorithm import genetic_algorithm
@@ -27,6 +29,7 @@ from src.moves import generateRandomState
 from src.plotter import Plotter
 from src.visualizer import StateVisualizer
 
+T = TypeVar("T", bound=QObject)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -45,7 +48,11 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle(loaded_ui.windowTitle())
         self.resize(loaded_ui.size())
-        self.ui = loaded_ui.centralWidget()
+        centralWidget = loaded_ui.findChild(QWidget, "centralWidget")
+        if centralWidget is not None:
+            self.ui = centralWidget
+        else:
+            self.ui = loaded_ui
         self.setCentralWidget(self.ui)
         self.visualizers = []
         self.plotters = []
@@ -57,20 +64,17 @@ class MainWindow(QMainWindow):
         self.truck_height = self.findWidget(QLineEdit, "editTruckHeight")
         self.max_capacity = self.findWidget(QLineEdit, "editTruckMaxCapacity")
 
+        self.algorithm_layout = self.findWidget(QFormLayout, "algorithmLayout")
         self.algorithm_choice = self.findWidget(QComboBox, "comboAlgorithm")
-        self.iteration_count = self.findWidget(QLineEdit, "editIterationCount")
-        self.iteration_count.setText("100")
-        self.initial_temperature = self.findWidget(QLineEdit, "editInitialTemperature")
-        self.initial_temperature.setText("100")
-        self.population_count = self.findWidget(QLineEdit, "editInitialPopulation")
-        self.population_count.setText("50")
 
         self.visualizer_frame = self.findWidget(QFrame, "visualizer")
         self.plot_frame = self.findWidget(QScrollArea, "plotFrame")
         self.plot_content = self.findWidget(QWidget, "plotContent")
-        self.plot_content_layout = self.plot_content.layout()
-        if self.plot_content_layout is None:
-            raise RuntimeError("UI widget has no plot content layout.")
+        pLayout = self.plot_content.layout()
+        if pLayout is None:
+            raise RuntimeError(f"Unable to access plot content layout")
+        self.plot_content_layout = pLayout
+        
         self.file_label = self.findWidget(QLabel, "lblFileInserted")
 
         self.btn_select_file = self.findWidget(QPushButton, "btnSelectFile")
@@ -91,19 +95,23 @@ class MainWindow(QMainWindow):
         self.btn_reset.clicked.connect(self.reset_form)
         self.btn_save.clicked.connect(self.save_result)
 
-        layout = self.visualizer_frame.layout()
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget() is not None:
-                item.widget().deleteLater()
+        vLayout = self.visualizer_frame.layout()
+        if vLayout is None:
+            raise RuntimeError(f"Unable to access visualizer frame layout")
+        while vLayout.count():
+            item = vLayout.takeAt(0)
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
 
         self.initial_visualizer = StateVisualizer("Initial State", parent=self.visualizer_frame)
         self.final_visualizer = StateVisualizer("Final State", parent=self.visualizer_frame)
-        layout.addWidget(self.initial_visualizer)
-        layout.addWidget(self.final_visualizer)
+        vLayout.addWidget(self.initial_visualizer)
+        vLayout.addWidget(self.final_visualizer)
         self.visualizers = [self.initial_visualizer, self.final_visualizer]
 
-    def findWidget(self, widget_type, name):
+    def findWidget(self, widget_type: type[T], name: str) -> T:
         widget = self.ui.findChild(widget_type, name)
         if widget is None:
             raise RuntimeError(f"UI widget not found: {name}")
@@ -225,14 +233,16 @@ class MainWindow(QMainWindow):
         for row in range(self.package_table.rowCount()):
             values = []
             for column in range(8):
-                if self.package_table.item(row, column):
-                    if column == 6: # fragile column, has checkbox instead of text
-                        values.append(self.package_table.item(row, 6) is not None and self.package_table.item(row, 6).checkState() == Qt.CheckState.Checked)
-                            
+                item = self.package_table.item(row, column)
+                if item is not None:
+                    if self.package_table.item(row, column):
+                        if column == 6: # fragile column, has checkbox instead of text
+                            values.append(item.checkState() == Qt.CheckState.Checked)
+                                
+                        else:
+                            values.append(item.text().strip())
                     else:
-                        values.append(self.package_table.item(row, column).text().strip())
-                else:
-                    values.append("")
+                        values.append("")
 
             package_id = values[0]
             if not package_id:
@@ -291,10 +301,11 @@ class MainWindow(QMainWindow):
     def clear_plotters(self):
         while self.plot_content_layout.count():
             item = self.plot_content_layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
-                widget.deleteLater()
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.setParent(None)
+                    widget.deleteLater()
         self.plotters.clear()
 
     def run_algorithm(self):
@@ -312,12 +323,6 @@ class MainWindow(QMainWindow):
                     self.max_capacity, "Maximum capacity"
                 ),
             )
-            population_count = self.read_positive_int(
-                self.population_count, "Initial population"
-            )
-            iteration_count = self.read_positive_int(
-                self.iteration_count, "Iteration count"
-            )
             if self.algorithm_choice.currentText() != "Genetic Algorithm":
                 raise ValueError("The selected algorithm is not implemented.")
 
@@ -331,7 +336,7 @@ class MainWindow(QMainWindow):
             listMax = []
             listAvg = []
             final_state = genetic_algorithm(
-                truck, packages, population_count, iteration_count, listMax, listAvg
+                truck, packages, 100, 100, listMax, listAvg
             )
             elapsed = time.perf_counter() - start_time
             final_value = score(truck, packages, final_state)
@@ -339,8 +344,8 @@ class MainWindow(QMainWindow):
             self.set_output("valAlgorithmUsed", "Genetic Algorithm")
             self.set_output(
                 "valConfiguration",
-                f"Initial population = {population_count}, "
-                f"Iterations = {iteration_count}",
+                f"Initial population = {100}, "
+                f"Iterations = {100}",
             )
             self.set_output("valExecutionTime", f"{elapsed:.4f} seconds")
             self.set_output("valInitialStateValue", f"{initial_value:.4f}")
@@ -376,10 +381,6 @@ class MainWindow(QMainWindow):
         for field in (self.truck_length, self.truck_width, self.truck_height, self.max_capacity):
             field.clear()
 
-        self.iteration_count.setText("100")
-        self.initial_temperature.setText("100")
-        self.population_count.setText("50")
-
         self.package_table.setRowCount(0)
 
         self.file_label.setText("No file has been inserted")
@@ -394,7 +395,7 @@ class MainWindow(QMainWindow):
             self.set_output(name, "")
 
         self.last_result = None
-        
+
         self.clear_visualizers()
         self.clear_plotters()
 
