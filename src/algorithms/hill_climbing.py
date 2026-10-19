@@ -43,11 +43,12 @@ def steepest_ascent(truck: Truck, packages: dict[str, Package], initial_state: S
                 best_neighbor_value = neighbor_value
 
         iteration += 1
-        accepted = best_neighbor is not None and best_neighbor_value > current_value
-        if accepted:
+        accepted = False
+        if best_neighbor is not None and best_neighbor_value > current_value:
             current_state = best_neighbor
             current_value = best_neighbor_value
             accepted_moves += 1
+            accepted = True
 
         history.append({
             "iteration": iteration,

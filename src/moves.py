@@ -155,6 +155,8 @@ def generate_neighbor(truck: Truck, packages: dict[str, Package], state: State):
 
         return State(placements)
 
+    return State(placements={})
+
 def replace_package(state: State, package_id: str, placement: Placement | None) -> State:
     placements = state.placements.copy()
     placements[package_id] = placement
