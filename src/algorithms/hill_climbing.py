@@ -1,7 +1,7 @@
 from time import perf_counter
 from src.model import Package, Truck, State
 from src.geometry import is_valid_placement, score
-from src.moves import generate_neighbors, generateRandomState
+from src.moves import generate_neighbors, generateRandomState, generate_neighbor
 
 def steepest_ascent(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, max_iterations: int | None = None) -> dict:
     if max_iterations is not None:
@@ -223,4 +223,60 @@ def random_restart(truck: Truck, packages: dict[str, Package],initial_state: Sta
         "duration_seconds": perf_counter() - start,
         "history": history,
         "runs": runs,
+    }
+
+def stochastic(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, *, max_iterations: int, ) -> dict:
+    if isinstance(max_iterations, bool) or not isinstance(max_iterations, int):
+        raise TypeError("max_iterations harus berupa bilangan integer")
+    if max_iterations < 0:
+        raise ValueError("max_iterations harus berupa bilangan integer yang tidak negatif")
+
+    start = perf_counter()
+    if initial_state is None:
+        initial_state = generateRandomState(truck, packages)
+    if not is_valid_placement(truck, packages, initial_state):
+        raise ValueError("initial_state harus memenuhi semua constraint placement yang telah ditetapkan")
+
+    current_state = State(initial_state.placements.copy())
+    current_value = score(truck, packages, current_state)
+    initial_value = current_value
+    accepted_moves = 0
+    history = [{
+        "iteration": 0,
+        "current_value": current_value,
+        "neighbors_evaluated": 0,
+        "accepted": False,
+    }]
+
+    for iteration in range(1, max_iterations + 1):
+        neighbor = generate_neighbor(truck, packages, current_state)
+        accepted = False
+        neighbors_evaluated = 0
+
+        if neighbor != current_state and is_valid_placement(truck, packages, neighbor):
+            neighbors_evaluated = 1
+            neighbor_value = score(truck, packages, neighbor)
+            if neighbor_value > current_value:
+                current_state = neighbor
+                current_value = neighbor_value
+                accepted = True
+                accepted_moves += 1
+
+        history.append({
+            "iteration": iteration,
+            "current_value": current_value,
+            "neighbors_evaluated": neighbors_evaluated,
+            "accepted": accepted,
+        })
+
+    return {
+        "initial_state": State(initial_state.placements.copy()),
+        "final_state": current_state,
+        "initial_value": initial_value,
+        "final_value": current_value,
+        "iterations": max_iterations,
+        "accepted_moves": accepted_moves,
+        "stop_reason": "max_iterations",
+        "duration_seconds": perf_counter() - start,
+        "history": history,
     }
