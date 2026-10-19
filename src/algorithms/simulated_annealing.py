@@ -24,7 +24,10 @@ def simulated_annealing(truck: Truck, packages: dict[str, Package], initial_stat
         "current_value": current_value,
         "best_value": best_value,
         "temperature": temperature,
-        "acceptance_probability": None
+        "delta": None,
+        "exp_delta_over_temp": None,
+        "acceptance_probability": None,
+        "accepted": False,
     }]
 
     # start SA main loop
@@ -36,20 +39,25 @@ def simulated_annealing(truck: Truck, packages: dict[str, Package], initial_stat
         #generate neighbor state
         neighbor = generate_neighbor(truck, packages, current_state)
 
-        probability = 0.0
+        delta = None
+        exp_delta_over_temp = None
+        probability = None
+        accepted = False
+
         # validate neighbor state
         if neighbor.placements != current_state.placements: 
             if is_valid_placement(truck, packages, neighbor):
                 neighbor_value = score(truck, packages, neighbor)
                 delta = neighbor_value - current_value
+                exponent = delta / temperature
+                # Limit the exponent to keep the value finite for plotting.
+                exp_delta_over_temp = math.exp(min(exponent, 700.0))
 
                 # if neighbor is better, accept it
-                if delta >= 0:
-                    probability = 1.0
-                else:
-                    probability = math.exp(delta / temperature)
+                probability = min(1.0, exp_delta_over_temp)
 
-                if random.random() < probability:
+                accepted = random.random() < probability
+                if accepted:
                     current_state = neighbor
                     current_value = neighbor_value
 
@@ -70,11 +78,56 @@ def simulated_annealing(truck: Truck, packages: dict[str, Package], initial_stat
             "current_value": current_value,
             "best_value": best_value,
             "temperature": temperature,
-            "acceptance_probability": probability
+            "delta": delta,
+            "exp_delta_over_temp": exp_delta_over_temp,
+            "acceptance_probability": probability,
+            "accepted": accepted,
         })
 
         # cool down temperature
         temperature *= cooling_rate
+
+    plot_data = {
+        "objective": {
+            "iterations": [],
+            "current": [],
+            "best": [],
+        },
+        "temperature": {
+            "iterations": [],
+            "values": [],
+        },
+        "acceptance_probability": {
+            "iterations": [],
+            "values": [],
+        },
+        "exp_delta_over_temp": {
+            "iterations": [],
+            "values": [],
+        },
+    }
+
+    for record in history:
+        iteration = record["iteration"]
+
+        plot_data["objective"]["iterations"].append(iteration)
+        plot_data["objective"]["current"].append(record["current_value"])
+        plot_data["objective"]["best"].append(record["best_value"])
+
+        plot_data["temperature"]["iterations"].append(iteration)
+        plot_data["temperature"]["values"].append(record["temperature"])
+
+        if record["acceptance_probability"] is not None:
+            plot_data["acceptance_probability"]["iterations"].append(iteration)
+            plot_data["acceptance_probability"]["values"].append(
+                record["acceptance_probability"]
+            )
+
+        if record["exp_delta_over_temp"] is not None:
+            plot_data["exp_delta_over_temp"]["iterations"].append(iteration)
+            plot_data["exp_delta_over_temp"]["values"].append(
+                record["exp_delta_over_temp"]
+            )
 
     return {
         "initial_state": State(initial_state.placements.copy()),
@@ -83,5 +136,6 @@ def simulated_annealing(truck: Truck, packages: dict[str, Package], initial_stat
         "iterations": len(history) - 1,
         "duration_seconds": perf_counter() - start,
         "stagnant_count": stagnant_count,
-        "history": history
+        "history": history,
+        "plot_data": plot_data,
     }
