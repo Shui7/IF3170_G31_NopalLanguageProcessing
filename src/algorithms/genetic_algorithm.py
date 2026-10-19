@@ -4,13 +4,14 @@ from src.geometry import score, is_valid_placement
 import math
 import random
 
-def genetic_algorithm(truck: Truck, packages: dict[str, Package], population_count: int, iteration_count: int, maxList: list[float], avgList: list[float]) -> State:
+def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state: State, population_count: int, iteration_count: int, maxList: list[float], avgList: list[float]) -> State:
     result = State(placements={})
     isResultValid = False
     resultValue = float('-inf')
     
     # Generate initial population
-    population = [generateRandomState(truck, packages) for _ in range(population_count)]
+    population = [initial_state] + [generateRandomState(truck, packages) for _ in range(population_count - 1)]
+    
 
     # Start iterating
     for _ in range(iteration_count):

@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSpinBox,
+    QDoubleSpinBox,
     QTableWidget,
     QTableWidgetItem,
     QWidget,
@@ -23,6 +25,13 @@ from PySide6.QtWidgets import (
 )
 
 from src.algorithms.genetic_algorithm import genetic_algorithm
+from src.algorithms.hill_climbing import (
+    random_restart,
+    sideways_move,
+    steepest_ascent,
+    stochastic,
+)
+from src.algorithms.simulated_annealing import simulated_annealing
 from src.geometry import score
 from src.model import Package, Truck
 from src.moves import generateRandomState
@@ -41,6 +50,8 @@ class MainWindow(QMainWindow):
             raise RuntimeError(f"Unable to open UI file: {ui_path}")
         try:
             loaded_ui = QUiLoader().load(ui_file)
+        except:
+            raise RuntimeError(f"Unable to open UI file: {ui_path}")
         finally:
             ui_file.close()
         if loaded_ui is None:
@@ -59,10 +70,10 @@ class MainWindow(QMainWindow):
         self.last_result = None
 
         self.package_table = self.findWidget(QTableWidget, "tablePackages")
-        self.truck_length = self.findWidget(QLineEdit, "editTruckLength")
-        self.truck_width = self.findWidget(QLineEdit, "editTruckWidth")
-        self.truck_height = self.findWidget(QLineEdit, "editTruckHeight")
-        self.max_capacity = self.findWidget(QLineEdit, "editTruckMaxCapacity")
+        self.truck_length = self.findWidget(QSpinBox, "editTruckLength")
+        self.truck_width = self.findWidget(QSpinBox, "editTruckWidth")
+        self.truck_height = self.findWidget(QSpinBox, "editTruckHeight")
+        self.max_capacity = self.findWidget(QSpinBox, "editTruckMaxCapacity")
 
         self.algorithm_layout = self.findWidget(QFormLayout, "algorithmLayout")
         self.algorithm_choice = self.findWidget(QComboBox, "comboAlgorithm")
@@ -94,6 +105,19 @@ class MainWindow(QMainWindow):
         self.btn_run.clicked.connect(self.run_algorithm)
         self.btn_reset.clicked.connect(self.reset_form)
         self.btn_save.clicked.connect(self.save_result)
+        self.algorithm_choice.currentTextChanged.connect(self.update_algorithm_configuration)
+
+        self.hill_version = QComboBox()
+        self.hill_version.addItems([
+            "Steepest Ascent",
+            "Sideways Move",
+            "Random Restart",
+            "Stochastic",
+        ])
+        self.hill_version.currentTextChanged.connect(self.update_algorithm_configuration)
+
+        self.configuration_widgets = {}
+        self.update_algorithm_configuration()
 
         vLayout = self.visualizer_frame.layout()
         if vLayout is None:
@@ -110,6 +134,69 @@ class MainWindow(QMainWindow):
         vLayout.addWidget(self.initial_visualizer)
         vLayout.addWidget(self.final_visualizer)
         self.visualizers = [self.initial_visualizer, self.final_visualizer]
+
+    def update_algorithm_configuration(self):
+        self.algorithm_layout.removeWidget(self.hill_version)
+
+        while self.algorithm_layout.rowCount() > 1:
+            self.algorithm_layout.removeRow(1)
+
+        self.configuration_widgets.clear()
+
+        algorithm = self.algorithm_choice.currentText()
+
+        if algorithm == "Hill Climbing":
+            self.algorithm_layout.insertRow(1, "Version:", self.hill_version)
+            configurations = {
+                "Steepest Ascent": [
+                    ("max_iterations", "Maximum iterations", "int", 100),
+                ],
+                "Sideways Move": [
+                    ("max_sideways_moves", "Maximum sideways moves", "int", 100),
+                    ("max_iterations", "Maximum iterations", "int", 100),
+                ],
+                "Random Restart": [
+                    ("max_restarts", "Maximum restarts", "int", 10),
+                    ("max_iterations", "Maximum iterations per restart", "int", 100),
+                ],
+                "Stochastic": [
+                    ("max_iterations", "Maximum iterations", "int", 100),
+                ],
+            }[self.hill_version.currentText()]
+        elif algorithm == "Simulated Annealing":
+            configurations = [
+                ("temperature", "Initial temperature", "float", 100.0),
+                ("cooling_rate", "Cooling rate", "float", 0.95),
+                ("max_iterations", "Maximum iterations", "int", 100),
+            ]
+        elif algorithm == "Genetic Algorithm":
+            configurations = [
+                ("population_count", "Initial population", "int", 100),
+                ("iteration_count", "Iterations", "int", 100),
+            ]
+        else:
+            configurations = []
+
+        for name, label, value_type, default in configurations:
+            if value_type == "float":
+                field = QDoubleSpinBox(self)
+                field.setDecimals(4)
+                field.setRange(0.0001, 1.0 if name == "cooling_rate" else 1_000_000.0)
+                field.setSingleStep(0.05 if name == "cooling_rate" else 1.0)
+            else:
+                field = QSpinBox(self)
+                field.setRange(0, 1_000_000)
+                field.setSingleStep(1)
+
+            field.setValue(default)
+            self.configuration_widgets[name] = field
+            self.algorithm_layout.addRow(label + ":", field)
+
+    def read_algorithm_configuration(self):
+        return {
+            name: field.value()
+            for name, field in self.configuration_widgets.items()
+        }
 
     def findWidget(self, widget_type: type[T], name: str) -> T:
         widget = self.ui.findChild(widget_type, name)
@@ -226,7 +313,7 @@ class MainWindow(QMainWindow):
     def set_json_field(self, field, data, *names):
         value = self.json_value(data, *names)
         if value is not None:
-            field.setText(self.json_text(value))
+            field.setValue(int(float(value)))
 
     def read_packages(self):
         packages = {}
@@ -234,15 +321,10 @@ class MainWindow(QMainWindow):
             values = []
             for column in range(8):
                 item = self.package_table.item(row, column)
-                if item is not None:
-                    if self.package_table.item(row, column):
-                        if column == 6: # fragile column, has checkbox instead of text
-                            values.append(item.checkState() == Qt.CheckState.Checked)
-                                
-                        else:
-                            values.append(item.text().strip())
-                    else:
-                        values.append("")
+                if column == 6:     # fragile column, has checkbox instead of text
+                    values.append(item is not None and item.checkState() == Qt.CheckState.Checked)
+                else:
+                    values.append(item.text().strip() if item is not None else "")
 
             package_id = values[0]
             if not package_id:
@@ -284,16 +366,6 @@ class MainWindow(QMainWindow):
             raise ValueError("Enter at least one package.")
         return packages
 
-    @staticmethod
-    def read_positive_int(field, label):
-        try:
-            value = int(field.text().strip())
-        except ValueError:
-            raise ValueError(f"{label} must be an integer.")
-        if value <= 0:
-            raise ValueError(f"{label} must be positive.")
-        return value
-
     def clear_visualizers(self):
         for visualizer in self.visualizers:
             visualizer.clear_state()
@@ -312,19 +384,11 @@ class MainWindow(QMainWindow):
         try:
             packages = self.read_packages()
             truck = Truck(
-                width=self.read_positive_int(self.truck_width, "Truck width"),
-                length=self.read_positive_int(
-                    self.truck_length, "Truck length"
-                ),
-                height=self.read_positive_int(
-                    self.truck_height, "Truck height"
-                ),
-                max_capacity=self.read_positive_int(
-                    self.max_capacity, "Maximum capacity"
-                ),
+                width=self.truck_width.value(),
+                length=self.truck_length.value(),
+                height=self.truck_height.value(),
+                max_capacity=self.max_capacity.value(),
             )
-            if self.algorithm_choice.currentText() != "Genetic Algorithm":
-                raise ValueError("The selected algorithm is not implemented.")
 
             self.btn_run.setEnabled(False)
             QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
@@ -332,21 +396,55 @@ class MainWindow(QMainWindow):
 
             initial_state = generateRandomState(truck, packages)
             initial_value = score(truck, packages, initial_state)
+            algorithm = self.algorithm_choice.currentText()
+            configuration = self.read_algorithm_configuration()
             start_time = time.perf_counter()
             listMax = []
             listAvg = []
-            final_state = genetic_algorithm(
-                truck, packages, 100, 100, listMax, listAvg
-            )
-            elapsed = time.perf_counter() - start_time
-            final_value = score(truck, packages, final_state)
 
-            self.set_output("valAlgorithmUsed", "Genetic Algorithm")
-            self.set_output(
-                "valConfiguration",
-                f"Initial population = {100}, "
-                f"Iterations = {100}",
+            if algorithm == "Genetic Algorithm":
+                final_state = genetic_algorithm(truck, packages, initial_state, configuration["population_count"], configuration["iteration_count"], listMax, listAvg)
+                result = {
+                    "final_state": final_state,
+                    "final_value": score(truck, packages, final_state),
+                    "history": [
+                        {
+                            "iteration": index + 1,
+                            "current_value": value,
+                            "best_value": value,
+                        }
+                        for index, value in enumerate(listMax)
+                    ],
+                }
+            elif algorithm == "Simulated Annealing":
+                result = simulated_annealing(truck, packages, initial_state, configuration["temperature"], configuration["cooling_rate"], configuration["max_iterations"])
+                final_state = result["final_state"]
+            elif algorithm == "Hill Climbing":
+                version = self.hill_version.currentText()
+                if version == "Steepest Ascent":
+                    result = steepest_ascent(truck, packages, initial_state, configuration["max_iterations"])
+                elif version == "Sideways Move":
+                    result = sideways_move(truck, packages, initial_state, configuration["max_sideways_moves"], configuration["max_iterations"])
+                elif version == "Random Restart":
+                    result = random_restart(truck, packages, initial_state, configuration["max_restarts"], configuration["max_iterations"])
+                else:
+                    result = stochastic(truck, packages, initial_state, max_iterations=configuration["max_iterations"])
+                final_state = result["final_state"]
+            else:
+                raise ValueError(f"Unsupported algorithm: {algorithm}")
+
+            elapsed = time.perf_counter() - start_time
+            final_value = result["final_value"]
+
+            configuration_text = ", ".join(
+                f"{name} = {value}" for name, value in configuration.items()
             )
+
+            algorithm_label = algorithm
+            if algorithm == "Hill Climbing":
+                algorithm_label = f"Hill Climbing ({self.hill_version.currentText()})"
+            self.set_output("valAlgorithmUsed", algorithm_label)
+            self.set_output("valConfiguration", configuration_text)
             self.set_output("valExecutionTime", f"{elapsed:.4f} seconds")
             self.set_output("valInitialStateValue", f"{initial_value:.4f}")
             self.set_output("valFinalStateValue", f"{final_value:.4f}")
@@ -355,15 +453,22 @@ class MainWindow(QMainWindow):
             self.final_visualizer.set_state(truck, packages, final_state)
 
             self.clear_plotters()
-            iterations = list(range(1, len(listMax) + 1))
-            max_plotter = Plotter(iterations, listMax, "Maximum Score by Iteration", "Iteration", "Maximum score")
-            avg_plotter = Plotter(iterations, listAvg, "Average Score by Iteration", "Iteration", "Average score")
-            self.plotters = [max_plotter, avg_plotter]
+            history = result.get("history", [])
+            iterations = [record["iteration"] for record in history]
+            current_values = [record["current_value"] for record in history]
+            best_values = [
+                record.get("best_value", record["current_value"])
+                for record in history
+            ]
+            self.plotters = [
+                Plotter(iterations, current_values, "Current Score by Iteration", "Iteration", "Current score"),
+                Plotter(iterations,best_values,"Best Score by Iteration","Iteration","Best score"),
+            ]
             for plotter in self.plotters:
                 self.plot_content_layout.addWidget(plotter)
 
             self.last_result = (
-                "Algorithm: Genetic Algorithm\n"
+                f"Algorithm: {algorithm_label}\n"
                 f"Initial value: {initial_value:.4f}\n"
                 f"Final value: {final_value:.4f}\n"
                 f"Execution time: {elapsed:.4f} seconds\n"

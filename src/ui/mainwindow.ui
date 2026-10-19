@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Truck Packing</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="centralLayout">
     <property name="leftMargin">
      <number>0</number>
@@ -159,37 +159,43 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="editTruckLength"/>
+            <widget class="QSpinBox" name="editTruckLength">
+              <property name="minimum"><number>1</number></property>
+              <property name="maximum"><number>100000</number></property>
+            </widget>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="lblWidth">
-             <property name="text">
-              <string>Width:</string>
-             </property>
+              <property name="text"><string>Width:</string></property>
             </widget>
            </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="editTruckWidth"/>
+            <item row="1" column="1">
+            <widget class="QSpinBox" name="editTruckWidth">
+              <property name="minimum"><number>1</number></property>
+              <property name="maximum"><number>100000</number></property>
+            </widget>
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="lblHeight">
-             <property name="text">
-              <string>Height:</string>
-             </property>
+              <property name="text"><string>Height:</string></property>
             </widget>
            </item>
-           <item row="2" column="1">
-            <widget class="QLineEdit" name="editTruckHeight"/>
+            <item row="2" column="1">
+            <widget class="QSpinBox" name="editTruckHeight">
+              <property name="minimum"><number>1</number></property>
+              <property name="maximum"><number>100000</number></property>
+            </widget>
            </item>
            <item row="3" column="0">
             <widget class="QLabel" name="lblMaxCapacity">
-             <property name="text">
-              <string>Max capacity:</string>
-             </property>
+              <property name="text"><string>Max capacity:</string></property>
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QLineEdit" name="editTruckMaxCapacity"/>
+            <widget class="QSpinBox" name="editTruckMaxCapacity">
+              <property name="minimum"><number>1</number></property>
+              <property name="maximum"><number>10000000</number></property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -318,6 +324,7 @@
               <string>Configuration</string>
              </property>
             </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -520,7 +527,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QWidget" name="inputPanel">
+      <widget class="QWidget" name="plotPanel">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
