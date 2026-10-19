@@ -1,6 +1,8 @@
 import random
+from struct import pack
 from .model import Package, Truck, Placement, State, Orientation
 from .geometry import dimensions, is_valid_placement
+from itertools import combinations
 
 def generateRandomState(truck: Truck, packages: dict[str, Package]) -> State:
     placements: dict[str, Placement | None] = {
@@ -149,3 +151,89 @@ def generate_neighbor(truck: Truck, packages: dict[str, Package], state: State):
         placements[package_id] = Placement(old_placement.x, old_placement.y, old_placement.z, orientation)
 
         return State(placements)
+
+def replace_package(state: State, package_id: str, placement: Placement | None) -> State:
+    placements = state.placements.copy()
+    placements[package_id] = placement
+    return State(placements=placements)
+
+def move_package(state: State, package_id: str, new_placement: Placement | None) -> State:
+    return replace_package(state, package_id, new_placement)
+
+def swap_packages(state: State, a_id: str, b_id: str) -> State:
+    if a_id == b_id:
+        return state
+
+    a = state.placements[a_id]
+    b = state.placements[b_id]
+    placements = state.placements.copy()
+
+    if a is not None and b is not None:
+        placements[a_id] = Placement(b.x, b.y, b.z, a.orientation)
+        placements[b_id] = Placement(a.x, a.y, a.z, b.orientation)
+    else:
+        placements[a_id] = b
+        placements[b_id] = a
+
+    return State(placements=placements)
+
+def rotate_package(state: State, package_id: str, axis: str) -> State:
+    if axis not in ("x", "y", "z"):
+        return state
+
+    old_placement = state.placements[package_id]
+    if old_placement is None:
+        return state
+
+    indices = {
+        "x": (1, 2),
+        "y": (0, 2),
+        "z": (0, 1)
+    }
+    i, j = indices[axis]
+    orient = list(old_placement.orientation.value)
+    orient[i], orient[j] = orient[j], orient[i]
+    return replace_package(state, package_id, Placement(old_placement.x, old_placement.y, old_placement.z, Orientation(tuple(orient))))
+
+def add_neighbor(truck: Truck, packages: dict[str, Package], candidate: State, package_ids: list[str], seen: set[tuple[Placement | None, ...]], neighbors: list[State]) -> None:
+    key = tuple(candidate.placements[pid] for pid in package_ids)
+    if key not in seen and is_valid_placement(truck, packages, candidate):
+        seen.add(key)
+        neighbors.append(candidate)
+
+def generate_neighbors(truck: Truck, packages: dict[str, Package], state: State) -> list[State]:
+    neighbors: list[State] = []
+    package_ids = list(state.placements)
+    seen = {tuple(state.placements[pid] for pid in package_ids)}
+
+    for a_id, b_id in combinations(package_ids, 2):
+        add_neighbor(truck, packages, swap_packages(state, a_id, b_id), package_ids, seen, neighbors)
+
+    for package_id, current in state.placements.items():
+        if current is not None:
+            add_neighbor(truck, packages, move_package(state, package_id, None), package_ids, seen, neighbors)
+            for axis in ("x", "y", "z"):
+                add_neighbor(truck, packages, rotate_package(state, package_id, axis), package_ids, seen, neighbors)
+
+        package = packages[package_id]
+        orientations = list(Orientation) if current is None else [current.orientation]
+        for orientation in orientations:
+            width, length, height = dimensions(package, orientation)
+            if width > truck.width or length > truck.length or height > truck.height:
+                continue
+
+            possible_z = {0}
+            for other_id, other in state.placements.items():
+                if other_id == package_id or other is None or packages[other_id].fragile:
+                    continue
+                other_height = dimensions(packages[other_id], other.orientation)[2]
+                top_z = other.z + other_height
+                if top_z + height <= truck.height:
+                    possible_z.add(top_z)
+
+            for x in range(truck.width - width + 1):
+                for y in range(truck.length - length + 1):
+                    for z in sorted(possible_z):
+                        placement = Placement(x, y, z, orientation)
+                        add_neighbor(truck, packages, move_package(state, package_id, placement), package_ids, seen, neighbors)
+    return neighbors
