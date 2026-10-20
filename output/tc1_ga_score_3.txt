@@ -1,0 +1,51 @@
+Objective: Maximize score
+Algorithm used: Genetic Algorithm
+Configuration: population_count = 100, iteration_count = 100
+Statistic:
+ Execution time:	4.5309 seconds
+ Initial objective:	450.0000
+ Final objective:	1360.0000
+ Population count:	100
+ Iteration count:	100
+
+
+Initial state configuration: P1: NOT PLACED | Dimensions: 30 x 40 x 20
+ P2: NOT PLACED | Dimensions: 30 x 30 x 30
+ P3: NOT PLACED | Dimensions: 40 x 50 x 25
+ P4: INSIDE | Position: (14, 41, 35) | Oriented dimensions: 20 x 20 x 20 | Orientation: LHW
+ P5: INSIDE | Position: (32, 50, 0) | Oriented dimensions: 25 x 15 x 35 | Orientation: WHL
+ P6: NOT PLACED | Dimensions: 40 x 60 x 30
+ P7: INSIDE | Position: (5, 53, 0) | Oriented dimensions: 25 x 25 x 25 | Orientation: WHL
+ P8: NOT PLACED | Dimensions: 35 x 45 x 20
+ P9: INSIDE | Position: (29, 8, 0) | Oriented dimensions: 30 x 20 x 15 | Orientation: LWH
+ P10: NOT PLACED | Dimensions: 30 x 55 x 25
+ P11: NOT PLACED | Dimensions: 40 x 40 x 40
+ P12: INSIDE | Position: (35, 67, 0) | Oriented dimensions: 10 x 20 x 15 | Orientation: HLW
+ P13: NOT PLACED | Dimensions: 50 x 50 x 30
+ P14: NOT PLACED | Dimensions: 30 x 35 x 30
+ P15: INSIDE | Position: (3, 12, 0) | Oriented dimensions: 20 x 20 x 25 | Orientation: HWL
+ P16: NOT PLACED | Dimensions: 30 x 60 x 20
+ P17: NOT PLACED | Dimensions: 30 x 30 x 20
+ P18: NOT PLACED | Dimensions: 40 x 45 x 35
+ P19: NOT PLACED | Dimensions: 15 x 15 x 15
+ P20: NOT PLACED | Dimensions: 25 x 40 x 25
+Final state configuration: P1: NOT PLACED | Dimensions: 30 x 40 x 20
+ P2: INSIDE | Position: (9, 16, 0) | Oriented dimensions: 30 x 30 x 30 | Orientation: HWL
+ P3: NOT PLACED | Dimensions: 40 x 50 x 25
+ P4: INSIDE | Position: (28, 80, 30) | Oriented dimensions: 20 x 20 x 20 | Orientation: HWL
+ P5: INSIDE | Position: (42, 3, 0) | Oriented dimensions: 15 x 35 x 25 | Orientation: HLW
+ P6: INSIDE | Position: (0, 39, 30) | Oriented dimensions: 60 x 40 x 30 | Orientation: LWH
+ P7: NOT PLACED | Dimensions: 25 x 25 x 25
+ P8: NOT PLACED | Dimensions: 35 x 45 x 20
+ P9: NOT PLACED | Dimensions: 20 x 30 x 15
+ P10: NOT PLACED | Dimensions: 30 x 55 x 25
+ P11: NOT PLACED | Dimensions: 40 x 40 x 40
+ P12: INSIDE | Position: (15, 6, 0) | Oriented dimensions: 15 x 10 x 20 | Orientation: WHL
+ P13: NOT PLACED | Dimensions: 50 x 50 x 30
+ P14: INSIDE | Position: (18, 70, 0) | Oriented dimensions: 35 x 30 x 30 | Orientation: LHW
+ P15: INSIDE | Position: (33, 49, 0) | Oriented dimensions: 25 x 20 x 20 | Orientation: LHW
+ P16: INSIDE | Position: (0, 5, 30) | Oriented dimensions: 60 x 30 x 20 | Orientation: LWH
+ P17: NOT PLACED | Dimensions: 30 x 30 x 20
+ P18: NOT PLACED | Dimensions: 40 x 45 x 35
+ P19: INSIDE | Position: (16, 47, 0) | Oriented dimensions: 15 x 15 x 15 | Orientation: LWH
+ P20: NOT PLACED | Dimensions: 25 x 40 x 25
