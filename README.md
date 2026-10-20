@@ -25,8 +25,8 @@ Algoritma yang diimplementasikan:
 | Genetic Algorithm | Jumlah populasi, banyak iterasi |
 
 Fungsi objektif:
-- **Maximize score** — total *value* paket di dalam truk dikurangi penalti pelanggaran *constraint*.
-- **Maximize packet count** — jumlah paket di dalam truk (bonus: fungsi objektif alternatif).
+- **Maximize score**: total *value* paket di dalam truk dikurangi penalti pelanggaran *constraint*.
+- **Maximize packet count**: jumlah paket di dalam truk (bonus: fungsi objektif alternatif).
 
 Program menampilkan visualisasi 3D *initial state* dan *final state*, juga plot nilai fungsi objektif terhadap iterasi (serta plot e^(ΔE/T) untuk Simulated Annealing dan plot nilai maksimum & rata-rata populasi untuk Genetic Algorithm), dan statistik hasil pencarian.
 
@@ -47,6 +47,11 @@ Jalankan dari *root* repository:
 python -m src.main
 ```
 
+1. Klik **Select file** untuk memilih file input `.json`, atau isi data truk dan paket secara manual dengan **Add package**.
+2. Pilih fungsi objektif dan algoritma, lalu atur parameternya.
+3. **Run** untuk menjalankan pencarian.
+4. **Save Result** untuk menyimpan hasil ke file `.txt`, misalnya ke folder `output/`.
+
 ### Linux/WSL yang menggunakan Python Conda
 
 Kalau muncul pesan seperti ini saat menjalankan programnya di WSL `QOpenGLWidget: Failed to create context`, jalankan program dengan command berikut:
@@ -56,11 +61,6 @@ LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
 QT_QPA_PLATFORM=xcb \
 ./venv/bin/python -m src.main
 ```
-
-1. Klik **Select file** untuk memilih file input `.json`, atau isi data truk dan paket secara manual dengan **Add package**.
-2. Pilih fungsi objektif dan algoritma, lalu atur parameternya.
-3. **Run** untuk menjalankan pencarian.
-4. **Save Result** untuk menyimpan hasil ke file `.txt`, misalnya ke folder `output/`.
 
 ### Format File Input
 
