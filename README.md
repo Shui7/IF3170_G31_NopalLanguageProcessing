@@ -6,9 +6,9 @@ Tugas Besar 1 IF3170 Inteligensi Artifisial 2026/2027.
 
 | NIM | Nama | Tugas |
 |---|---|---|
-| 13524003 | Faiq Azzam Nafidz | Fungsi objektif, Genetic Algorithm, GUI dan integration, penyimpanan hasil ke file, test case, laporan |
-| 13524013 | Anindya Naufal Pinasthika | Model dan geometri state, fungsi objektif, Simulated Annealing, fungsi objektif alternatif, laporan |
-| 13524139 | Azri Arzaq Pohan | Pembangkitan state dan neighbor, seluruh algoritma Hill Climbing, laporan |
+| 13524003 | Faiq Azzam Nafidz | Objective function utama (score()), Genetic Algorithm, GUI, visualisasi state, plotting, dan laporan. |
+| 13524013 | Anindya Naufal Pinasthika | State & Objective function, pembangkitan neighbor,  simulated annealing, bonus alternatif objective function, dan laporan |
+| 13524139 | Azri Arzaq Pohan | State, hill climbing (Steepest Ascent), bonus implementasi seluruh algoritma hill-climbing (Sideways Move, Random-Restart, Stochastic), dan laporan |
 
 Tugas besar ini dibuat untuk melakukan searching konfigurasi pengisian paket ke dalam peti kemas truk yang **memaksimalkan nilai (*value*)** paket yang diangkut dengan menggunakan algoritma *local search*. 
 Setiap paket dapat berada di dalam ataupun di luar truk, dengan *constraint* yang telah ditetapkan sebagai berikut:
