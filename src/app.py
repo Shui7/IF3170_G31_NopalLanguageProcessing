@@ -324,7 +324,7 @@ class MainWindow(QMainWindow):
             field.setValue(int(float(value)))
 
     def read_packages(self):
-        packages = {}
+        packages: dict[str, Package] = {}
         for row in range(self.package_table.rowCount()):
             values = []
             for column in range(8):

@@ -29,7 +29,7 @@ class StateVisualizer(QWidget):
         hLayout.addWidget(self.details, stretch=1)
         layout.addLayout(hLayout)
 
-    def set_state(self, truck: Truck, packages: list[Package], state: State, objective_function=score, objective_label="Maksimalkan score"):
+    def set_state(self, truck: Truck, packages, state: State, objective_function=score, objective_label="Maksimalkan score"):
         self.truck = truck
         self.packages = packages
         self.state = state
@@ -45,6 +45,8 @@ class StateVisualizer(QWidget):
         self.title_label.setText(self.base_title)
 
     def render_state(self):
+        if self.truck is None or self.state is None:
+            return
         self.plotter.clear()
         self.details.clear()
 
