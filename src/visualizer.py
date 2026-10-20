@@ -4,7 +4,8 @@ import pyvista as pv
 from pyvistaqt import QtInteractor
 
 from src.model import Package, Truck, State
-from src.geometry import dimensions, score, overlaps, supports, outOfBounds
+from src.geometry import dimensions, overlaps, supports, outOfBounds
+from src.objective import score
 
 
 class StateVisualizer(QWidget):
@@ -28,7 +29,7 @@ class StateVisualizer(QWidget):
         hLayout.addWidget(self.details, stretch=1)
         layout.addLayout(hLayout)
 
-    def set_state(self, truck, packages, state):
+    def set_state(self, truck, packages, state, objective_function=score, objective_label="Maksimalkan score"):
         self.truck = truck
         self.packages = packages
         self.state = state
@@ -177,13 +178,11 @@ class StateVisualizer(QWidget):
                 f"Value: {package.value}"
             )
 
-        state_value = score(
-            self.truck, self.packages, self.state
-        )
+        state_value = objective_function(self.truck, self.packages, self.state)
 
         self.title_label.setText(
             f"{self.windowTitle()} | "
-            f"Value: {state_value:.2f} | "
+            f"{objective_label}: {state_value:.2f} | "
             f"Inside: {placed_count} | "
             f"Outside: {outside_count}"
         )

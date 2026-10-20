@@ -1,9 +1,10 @@
 from time import perf_counter
 from src.model import Package, Truck, State
-from src.geometry import is_valid_placement, score
+from src.geometry import is_valid_placement
 from src.moves import generate_neighbors, generateRandomState, generate_neighbor
+from src.objective import score
 
-def steepest_ascent(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, max_iterations: int | None = None) -> dict:
+def steepest_ascent(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, max_iterations: int | None = None, objective_function=score) -> dict:
     if max_iterations is not None:
         if isinstance(max_iterations, bool) or not isinstance(max_iterations, int):
             raise TypeError("max_iterations harus berupa bilangan integer")
@@ -17,7 +18,7 @@ def steepest_ascent(truck: Truck, packages: dict[str, Package], initial_state: S
     if not is_valid_placement(truck, packages, initial_state):
         raise ValueError("initial_state harus memenuhi semua batasan penempatan yang telah ditetapkan")
     current_state = State(initial_state.placements.copy())
-    current_value = score(truck, packages, current_state)
+    current_value = objective_function(truck, packages, current_state)
     initial_value = current_value
 
     history = [{
@@ -37,7 +38,7 @@ def steepest_ascent(truck: Truck, packages: dict[str, Package], initial_state: S
         # find the best neighbor from all valid neighbors
         for neighbor in generate_neighbors(truck, packages, current_state):
             neighbors_evaluated += 1
-            neighbor_value = score(truck, packages, neighbor)
+            neighbor_value = objective_function(truck, packages, neighbor)
             if neighbor_value > best_neighbor_value:
                 best_neighbor = neighbor
                 best_neighbor_value = neighbor_value
@@ -73,7 +74,7 @@ def steepest_ascent(truck: Truck, packages: dict[str, Package], initial_state: S
         "history": history
     }
 
-def sideways_move(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, max_sideways_moves: int = 100, max_iterations: int | None = None,) -> dict:
+def sideways_move(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, max_sideways_moves: int = 100, max_iterations: int | None = None, objective_function=score,) -> dict:
     if isinstance(max_sideways_moves, bool) or not isinstance(max_sideways_moves, int):
         raise TypeError("max_sideways_moves harus berupa bilangan integer")
     if max_sideways_moves < 0:
@@ -91,7 +92,7 @@ def sideways_move(truck: Truck, packages: dict[str, Package], initial_state: Sta
         raise ValueError("initial_state harus memenuhi semua batasan penempatan yang telah ditetapkan")
 
     current_state = State(initial_state.placements.copy())
-    current_value = score(truck, packages, current_state)
+    current_value = objective_function(truck, packages, current_state)
     initial_value = current_value
     iteration = 0
     accepted_moves = 0
@@ -112,7 +113,7 @@ def sideways_move(truck: Truck, packages: dict[str, Package], initial_state: Sta
         neighbors_evaluated = 0
         for neighbor in generate_neighbors(truck, packages, current_state):
             neighbors_evaluated += 1
-            neighbor_value = score(truck, packages, neighbor)
+            neighbor_value = objective_function(truck, packages, neighbor)
             if neighbor_value > best_neighbor_value:
                 best_neighbor = neighbor
                 best_neighbor_value = neighbor_value
@@ -163,7 +164,7 @@ def sideways_move(truck: Truck, packages: dict[str, Package], initial_state: Sta
     }
 
 
-def random_restart(truck: Truck, packages: dict[str, Package],initial_state: State | None = None, max_restarts: int = 10,max_iterations: int | None = None,) -> dict:
+def random_restart(truck: Truck, packages: dict[str, Package],initial_state: State | None = None, max_restarts: int = 10,max_iterations: int | None = None, objective_function=score,) -> dict:
     if isinstance(max_restarts, bool) or not isinstance(max_restarts, int):
         raise TypeError("max_restarts harus berupa bilangan integer")
     if max_restarts < 0:
@@ -187,7 +188,7 @@ def random_restart(truck: Truck, packages: dict[str, Package],initial_state: Sta
 
     for restart in range(max_restarts + 1):
         run_initial_state = initial_state if restart == 0 else None
-        result = steepest_ascent(truck, packages, run_initial_state, max_iterations)
+        result = steepest_ascent(truck, packages, run_initial_state, max_iterations, objective_function)
         runs.append({"restart": restart, **result})
         iterations_per_restart.append(result["iterations"])
 
@@ -226,7 +227,7 @@ def random_restart(truck: Truck, packages: dict[str, Package],initial_state: Sta
         "runs": runs,
     }
 
-def stochastic(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, *, max_iterations: int, ) -> dict:
+def stochastic(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, *, max_iterations: int, objective_function=score, ) -> dict:
     if isinstance(max_iterations, bool) or not isinstance(max_iterations, int):
         raise TypeError("max_iterations harus berupa bilangan integer")
     if max_iterations < 0:
@@ -239,7 +240,7 @@ def stochastic(truck: Truck, packages: dict[str, Package], initial_state: State 
         raise ValueError("initial_state harus memenuhi semua constraint placement yang telah ditetapkan")
 
     current_state = State(initial_state.placements.copy())
-    current_value = score(truck, packages, current_state)
+    current_value = objective_function(truck, packages, current_state)
     initial_value = current_value
     accepted_moves = 0
     history = [{
@@ -256,7 +257,7 @@ def stochastic(truck: Truck, packages: dict[str, Package], initial_state: State 
 
         if neighbor != current_state and is_valid_placement(truck, packages, neighbor):
             neighbors_evaluated = 1
-            neighbor_value = score(truck, packages, neighbor)
+            neighbor_value = objective_function(truck, packages, neighbor)
             if neighbor_value > current_value:
                 current_state = neighbor
                 current_value = neighbor_value

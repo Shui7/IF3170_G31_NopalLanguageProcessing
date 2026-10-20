@@ -1,11 +1,12 @@
 from src.model import Package, Truck, Placement, State, Orientation
 from src.moves import generateRandomState
-from src.geometry import score, is_valid_placement
+from src.geometry import is_valid_placement
+from src.objective import score
 import math
 import random
 from time import perf_counter
 
-def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, population_count: int = 50, iteration_count: int = 100) -> dict:
+def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, population_count: int = 50, iteration_count: int = 100, objective_function=score) -> dict:
     start = perf_counter()
     
     result = State(placements={})
@@ -16,6 +17,8 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
     if initial_state is None:
         population = [generateRandomState(truck, packages) for _ in range(population_count)]
     else:
+        if not is_valid_placement(truck, packages, initial_state):
+            raise ValueError("initial_state harus memenuhi semua batasan penempatan yang telah ditetapkan")
         population = [initial_state] + [generateRandomState(truck, packages) for _ in range(population_count - 1)]
 
     history = []
@@ -26,7 +29,7 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
 
     # Populate history
     for i in range(population_count):
-        values[i] = score(truck, packages, population[i])
+        values[i] = objective_function(truck, packages, population[i])
         if i == 0:
             initial_value = values[i]
         total_value += values[i]
@@ -46,7 +49,7 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
     for iteration in range(iteration_count):
         # Obtain values for each state
         for i in range(population_count):
-            values[i] = score(truck, packages, population[i])
+            values[i] = objective_function(truck, packages, population[i])
             total_value += values[i]
             # Check potential valid result
             if resultValue < values[i]:
@@ -95,6 +98,10 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
         if population_count % 2 == 1:
             crossover.append(population[index_highest])
 
+        for i in range(len(crossover)):
+            if not is_valid_placement(truck, packages, crossover[i]):
+                crossover[i] = generateRandomState(truck, packages)
+
         # Mutation (50/50 happends)
         # for i in range(population_count):
         #     rand = random.random()
@@ -121,7 +128,7 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
         })
 
     for i in range(population_count):
-        value = score(truck, packages, population[i])
+        value = objective_function(truck, packages, population[i])
         if resultValue < value:
             isPotentialValid = is_valid_placement(truck, packages, population[i])
             if not isResultValid or (isResultValid and isPotentialValid):

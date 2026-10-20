@@ -2,16 +2,17 @@ import random
 import math
 from time import perf_counter
 from src.model import *
-from src.geometry import *
+from src.geometry import is_valid_placement
 from src.moves import generate_neighbor
+from src.objective import score
 
 # SA algorithm  
-def simulated_annealing(truck: Truck, packages: dict[str, Package], initial_state: State, temperature: float, cooling_rate: float, max_iterations: int):
+def simulated_annealing(truck: Truck, packages: dict[str, Package], initial_state: State, temperature: float, cooling_rate: float, max_iterations: int, objective_function=score):
     start = perf_counter()
 
     # initial state
     current_state = State(initial_state.placements.copy())
-    current_value = score(truck, packages, current_state)
+    current_value = objective_function(truck, packages, current_state)
 
     best_state = State(current_state.placements.copy())
     best_value = current_value
@@ -47,7 +48,7 @@ def simulated_annealing(truck: Truck, packages: dict[str, Package], initial_stat
         # validate neighbor state
         if neighbor.placements != current_state.placements: 
             if is_valid_placement(truck, packages, neighbor):
-                neighbor_value = score(truck, packages, neighbor)
+                neighbor_value = objective_function(truck, packages, neighbor)
                 delta = neighbor_value - current_value
                 exponent = delta / temperature
                 # Limit the exponent to keep the value finite for plotting.

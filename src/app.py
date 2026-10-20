@@ -32,9 +32,9 @@ from src.algorithms.hill_climbing import (
     stochastic,
 )
 from src.algorithms.simulated_annealing import simulated_annealing
-from src.geometry import score
 from src.model import Package, Truck
 from src.moves import generateRandomState
+from src.objective import package_count, score
 from src.plotter import Plotter
 from src.visualizer import StateVisualizer
 
@@ -77,6 +77,9 @@ class MainWindow(QMainWindow):
 
         self.algorithm_layout = self.findWidget(QFormLayout, "algorithmLayout")
         self.algorithm_choice = self.findWidget(QComboBox, "comboAlgorithm")
+        self.objective_choice = QComboBox()
+        self.objective_choice.addItem("Maksimalkan score")
+        self.objective_choice.addItem("Maksimalkan jumlah paket")
 
         self.visualizer_frame = self.findWidget(QFrame, "visualizer")
         self.plot_frame = self.findWidget(QScrollArea, "plotFrame")
@@ -106,6 +109,7 @@ class MainWindow(QMainWindow):
         self.btn_reset.clicked.connect(self.reset_form)
         self.btn_save.clicked.connect(self.save_result)
         self.algorithm_choice.currentTextChanged.connect(self.update_algorithm_configuration)
+        self.objective_choice.currentTextChanged.connect(self.update_algorithm_configuration)
 
         self.hill_version = QComboBox()
         self.hill_version.addItems([
@@ -141,16 +145,18 @@ class MainWindow(QMainWindow):
 
     def update_algorithm_configuration(self):
         self.algorithm_layout.removeWidget(self.hill_version)
+        self.algorithm_layout.removeWidget(self.objective_choice)
 
         while self.algorithm_layout.rowCount() > 1:
             self.algorithm_layout.removeRow(1)
 
         self.configuration_widgets.clear()
+        self.algorithm_layout.insertRow(1, "Objective:", self.objective_choice)
 
         algorithm = self.algorithm_choice.currentText()
 
         if algorithm == "Hill Climbing":
-            self.algorithm_layout.insertRow(1, "Version:", self.hill_version)
+            self.algorithm_layout.insertRow(2, "Version:", self.hill_version)
             configurations = {
                 "Steepest Ascent": [
                     ("max_iterations", "Maximum iterations", "int", 100),
@@ -399,7 +405,15 @@ class MainWindow(QMainWindow):
             QApplication.processEvents()
 
             initial_state = generateRandomState(truck, packages)
-            initial_value = score(truck, packages, initial_state)
+            objective_label = self.objective_choice.currentText()
+            if objective_label == "Maksimalkan score":
+                objective_function = score
+            elif objective_label == "Maksimalkan jumlah paket":
+                objective_function = package_count
+            else:
+                raise ValueError(f"Unsupported objective: {objective_label}")
+
+            initial_value = objective_function(truck, packages, initial_state)
             algorithm = self.algorithm_choice.currentText()
             configuration = self.read_algorithm_configuration()
             start_time = time.perf_counter()
@@ -407,19 +421,19 @@ class MainWindow(QMainWindow):
             version = ""
 
             if algorithm == "Genetic Algorithm":
-                result = genetic_algorithm(truck, packages, initial_state, configuration["population_count"], configuration["iteration_count"])
+                result = genetic_algorithm(truck, packages, initial_state, configuration["population_count"], configuration["iteration_count"], objective_function)
             elif algorithm == "Simulated Annealing":
-                result = simulated_annealing(truck, packages, initial_state, configuration["temperature"], configuration["cooling_rate"], configuration["max_iterations"])
+                result = simulated_annealing(truck, packages, initial_state, configuration["temperature"], configuration["cooling_rate"], configuration["max_iterations"], objective_function)
             elif algorithm == "Hill Climbing":
                 version = self.hill_version.currentText()
                 if version == "Steepest Ascent":
-                    result = steepest_ascent(truck, packages, initial_state, configuration["max_iterations"])
+                    result = steepest_ascent(truck, packages, initial_state, configuration["max_iterations"], objective_function)
                 elif version == "Sideways Move":
-                    result = sideways_move(truck, packages, initial_state, configuration["max_sideways_moves"], configuration["max_iterations"])
+                    result = sideways_move(truck, packages, initial_state, configuration["max_sideways_moves"], configuration["max_iterations"], objective_function)
                 elif version == "Random Restart":
-                    result = random_restart(truck, packages, initial_state, configuration["max_restarts"], configuration["max_iterations"])
+                    result = random_restart(truck, packages, initial_state, configuration["max_restarts"], configuration["max_iterations"], objective_function)
                 else:
-                    result = stochastic(truck, packages, initial_state, max_iterations=configuration["max_iterations"])
+                    result = stochastic(truck, packages, initial_state, max_iterations=configuration["max_iterations"], objective_function=objective_function)
             else:
                 raise ValueError(f"Unsupported algorithm: {algorithm}")
 
@@ -437,8 +451,8 @@ class MainWindow(QMainWindow):
                 algorithm_label = f"Algorithm used: {algorithm}"
 
             statistic = f" Execution time:\t{elapsed:.4f} seconds\n"
-            statistic += f" Initial value:\t{initial_value:.4f}\n"
-            statistic += f" Final value:\t{final_value:.4f}\n"
+            statistic += f" Initial objective ({objective_label}):\t{initial_value:.4f}\n"
+            statistic += f" Final objective ({objective_label}):\t{final_value:.4f}\n"
 
             if algorithm == "Hill Climbing":
                 if version == "Steepest Ascent":
@@ -459,8 +473,8 @@ class MainWindow(QMainWindow):
             self.result_configuration_used.setText(configuration_text)
             self.result_statistic.setText(statistic)
 
-            self.initial_visualizer.set_state(truck, packages, initial_state)
-            self.final_visualizer.set_state(truck, packages, final_state)
+            self.initial_visualizer.set_state(truck, packages, initial_state, objective_function, objective_label)
+            self.final_visualizer.set_state(truck, packages, final_state, objective_function, objective_label)
 
             self.clear_plotters()
             history = result["history"]
@@ -468,20 +482,20 @@ class MainWindow(QMainWindow):
 
             self.plotters = []
             if algorithm != "Genetic Algorithm":
-                self.plotters.append(Plotter(iterations, [record["current_value"] for record in history], "Current Score by Iteration", "Iteration", "Current score"))
+                self.plotters.append(Plotter(iterations, [record["current_value"] for record in history], f"Current Objective by Iteration ({objective_label})", "Iteration", objective_label))
                 if algorithm == "Simulated Annealing":
-                    self.plotters.append(Plotter(iterations, [record["exp_delta_over_temp"] for record in history], "e^(Delta(E)/T) by Iteration", "Iteration", "e^(Delta(E)/T)"))
+                    self.plotters.append(Plotter(iterations, [record["exp_delta_over_temp"] for record in history], f"e^(Delta({objective_label})/T) by Iteration", "Iteration", f"e^(Delta({objective_label})/T)"))
             else:
-                self.plotters.append(Plotter(iterations, [record["best_value"] for record in history], "Best Value by Iteration", "Iteration", "Best Value"))
-                self.plotters.append(Plotter(iterations, [record["average_value"] for record in history], "Average Value by Iteration", "Iteration", "Avg Value"))
+                self.plotters.append(Plotter(iterations, [record["best_value"] for record in history], f"Best Objective by Iteration ({objective_label})", "Iteration", objective_label))
+                self.plotters.append(Plotter(iterations, [record["average_value"] for record in history], f"Average Objective by Iteration ({objective_label})", "Iteration", f"Average {objective_label}"))
 
             for plotter in self.plotters:
                 self.plot_content_layout.addWidget(plotter)
 
             self.last_result = (
                 f"Algorithm: {algorithm_label}\n"
-                f"Initial value: {initial_value:.4f}\n"
-                f"Final value: {final_value:.4f}\n"
+                f"Initial objective ({objective_label}): {initial_value:.4f}\n"
+                f"Final objective ({objective_label}): {final_value:.4f}\n"
                 f"Execution time: {elapsed:.4f} seconds\n"
             )
         except Exception as error:
