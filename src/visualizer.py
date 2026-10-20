@@ -29,10 +29,11 @@ class StateVisualizer(QWidget):
         hLayout.addWidget(self.details, stretch=1)
         layout.addLayout(hLayout)
 
-    def set_state(self, truck, packages, state, objective_function=score, objective_label="Maksimalkan score"):
+    def set_state(self, truck: Truck, packages: list[Package], state: State, objective_function=score, objective_label="Maksimalkan score"):
         self.truck = truck
         self.packages = packages
         self.state = state
+        self.objective_function = objective_function
         self.render_state()
 
     def clear_state(self):
@@ -94,10 +95,7 @@ class StateVisualizer(QWidget):
                 outside_count += 1
                 self.details.addItem(
                     f"{package_id}: NOT PLACED | "
-                    f"Dimensions: {package.width} x "
-                    f"{package.length} x {package.height} | "
-                    f"Weight: {package.weight} | "
-                    f"Value: {package.value}"
+                    f"Dimensions: {package.width} x {package.length} x {package.height}"
                 )
                 continue
 
@@ -173,16 +171,14 @@ class StateVisualizer(QWidget):
                 f"Position: ({x}, {y}, {z}) | "
                 f"Oriented dimensions: "
                 f"{size[0]} x {size[1]} x {size[2]} | "
-                f"Orientation: {placement.orientation.name} | "
-                f"Weight: {package.weight} | "
-                f"Value: {package.value}"
+                f"Orientation: {placement.orientation.name}"
             )
 
-        state_value = objective_function(self.truck, self.packages, self.state)
+        state_value = self.objective_function(self.truck, self.packages, self.state)
 
         self.title_label.setText(
             f"{self.windowTitle()} | "
-            f"{objective_label}: {state_value:.2f} | "
+            f"Value: {state_value:.2f} | "
             f"Inside: {placed_count} | "
             f"Outside: {outside_count}"
         )

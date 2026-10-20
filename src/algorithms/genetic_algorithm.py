@@ -1,5 +1,5 @@
 from src.model import Package, Truck, Placement, State, Orientation
-from src.moves import generateRandomState
+from src.moves import generateRandomState, generate_neighbor
 from src.geometry import is_valid_placement
 from src.objective import score
 import math
@@ -98,20 +98,10 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
         if population_count % 2 == 1:
             crossover.append(population[index_highest])
 
-        for i in range(len(crossover)):
-            if not is_valid_placement(truck, packages, crossover[i]):
-                crossover[i] = generateRandomState(truck, packages)
-
-        # Mutation (50/50 happends)
-        # for i in range(population_count):
-        #     rand = random.random()
-        #     if rand < 0.5:
-        #         # move randomly, to be implemented
-        #         # for now, remove a placement
-        #         package_ids = list(crossover[i].placements)
-        #         if package_ids:
-        #             package_id = random.choice(package_ids)
-        #             crossover[i].placements[package_id] = None
+        # Mutation (50/50 happens to each state that is invalid, will replace state to its random neighbor)
+        for i in range(population_count):
+            if not is_valid_placement(truck, packages, crossover[i]) and random.random() < 0.5:
+                crossover[i] = generate_neighbor(truck, packages, crossover[i])
 
         population = crossover
 

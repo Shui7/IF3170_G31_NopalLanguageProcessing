@@ -77,9 +77,12 @@ class MainWindow(QMainWindow):
 
         self.algorithm_layout = self.findWidget(QFormLayout, "algorithmLayout")
         self.algorithm_choice = self.findWidget(QComboBox, "comboAlgorithm")
-        self.objective_choice = QComboBox()
-        self.objective_choice.addItem("Maksimalkan score")
-        self.objective_choice.addItem("Maksimalkan jumlah paket")
+        self.algorithm_choice.addItem("Hill Climbing")
+        self.algorithm_choice.addItem("Simulated Annealing")
+        self.algorithm_choice.addItem("Genetic Algorithm")
+        self.objective_choice = self.findWidget(QComboBox, "comboObjective")
+        self.objective_choice.addItem("Maximize score")
+        self.objective_choice.addItem("Maximize packet count")
 
         self.visualizer_frame = self.findWidget(QFrame, "visualizer")
         self.plot_frame = self.findWidget(QScrollArea, "plotFrame")
@@ -97,10 +100,6 @@ class MainWindow(QMainWindow):
         self.btn_run = self.findWidget(QPushButton, "btnRun")
         self.btn_reset = self.findWidget(QPushButton, "btnReset")
         self.btn_save = self.findWidget(QPushButton, "btnSave")
-
-        self.algorithm_choice.addItem("Hill Climbing")
-        self.algorithm_choice.addItem("Simulated Annealing")
-        self.algorithm_choice.addItem("Genetic Algorithm")
 
         self.btn_select_file.clicked.connect(self.select_input_file)
         self.btn_add_package.clicked.connect(self.add_package_row)
@@ -123,6 +122,7 @@ class MainWindow(QMainWindow):
         self.configuration_widgets = {}
         self.update_algorithm_configuration()
 
+        self.result_objective_used = self.findWidget(QLabel, "lblObjectiveUsed")
         self.result_algorithm_used = self.findWidget(QLabel, "lblAlgorithmUsed")
         self.result_configuration_used = self.findWidget(QLabel, "lblConfigurationUsed")
         self.result_statistic = self.findWidget(QLabel, "lblStatisticDetail")
@@ -145,13 +145,11 @@ class MainWindow(QMainWindow):
 
     def update_algorithm_configuration(self):
         self.algorithm_layout.removeWidget(self.hill_version)
-        self.algorithm_layout.removeWidget(self.objective_choice)
 
-        while self.algorithm_layout.rowCount() > 1:
-            self.algorithm_layout.removeRow(1)
+        while self.algorithm_layout.rowCount() > 2:
+            self.algorithm_layout.removeRow(2)
 
         self.configuration_widgets.clear()
-        self.algorithm_layout.insertRow(1, "Objective:", self.objective_choice)
 
         algorithm = self.algorithm_choice.currentText()
 
@@ -406,9 +404,9 @@ class MainWindow(QMainWindow):
 
             initial_state = generateRandomState(truck, packages)
             objective_label = self.objective_choice.currentText()
-            if objective_label == "Maksimalkan score":
+            if objective_label == "Maximize score":
                 objective_function = score
-            elif objective_label == "Maksimalkan jumlah paket":
+            elif objective_label == "Maximize packet count":
                 objective_function = package_count
             else:
                 raise ValueError(f"Unsupported objective: {objective_label}")
@@ -441,18 +439,19 @@ class MainWindow(QMainWindow):
             final_state = result["final_state"]
             final_value = result["final_value"]
 
-            configuration_text = "Configuration: " + ", ".join(
-                f"{name} = {value}" for name, value in configuration.items()
-            )
-
             if algorithm == "Hill Climbing":
                 algorithm_label = f"Algorithm used: Hill Climbing ({version})"
             else:
                 algorithm_label = f"Algorithm used: {algorithm}"
 
+            configuration_text = "Configuration: " + ", ".join(
+                f"{name} = {value}" for name, value in configuration.items()
+            )
+
+
             statistic = f" Execution time:\t{elapsed:.4f} seconds\n"
-            statistic += f" Initial objective ({objective_label}):\t{initial_value:.4f}\n"
-            statistic += f" Final objective ({objective_label}):\t{final_value:.4f}\n"
+            statistic += f" Initial objective:\t{initial_value:.4f}\n"
+            statistic += f" Final objective:\t{final_value:.4f}\n"
 
             if algorithm == "Hill Climbing":
                 if version == "Steepest Ascent":
@@ -469,6 +468,7 @@ class MainWindow(QMainWindow):
                 statistic += f" Population count:\t{result["population_count"]}\n"
                 statistic += f" Iteration count:\t{result["iterations"]}\n"
 
+            self.result_objective_used.setText(f"Objective: {objective_label}")
             self.result_algorithm_used.setText(algorithm_label)
             self.result_configuration_used.setText(configuration_text)
             self.result_statistic.setText(statistic)
@@ -493,10 +493,10 @@ class MainWindow(QMainWindow):
                 self.plot_content_layout.addWidget(plotter)
 
             self.last_result = (
-                f"Algorithm: {algorithm_label}\n"
-                f"Initial objective ({objective_label}): {initial_value:.4f}\n"
-                f"Final objective ({objective_label}): {final_value:.4f}\n"
-                f"Execution time: {elapsed:.4f} seconds\n"
+                f"{algorithm_label}\n"
+                f"{configuration_text}\n"
+                "Statistic:\n"
+                f"{statistic}\n"
             )
         except Exception as error:
             QMessageBox.critical(self, "Execution Error", f"{type(error).__name__}: {error}")
@@ -531,5 +531,13 @@ class MainWindow(QMainWindow):
             self, "Save result", "", "Text files (*.txt);;All files (*)"
         )
         if path:
+            state_configs = ""
+            if len(self.visualizers) == 2:
+                state_configs += "Initial state configuration:"
+                for item in [self.visualizers[0].details.item(i) for i in range(self.visualizers[0].details.count())]:
+                    state_configs += " " + item.text() + "\n"
+                state_configs += "Final state configuration:"
+                for item in [self.visualizers[1].details.item(i) for i in range(self.visualizers[1].details.count())]:
+                    state_configs += " " + item.text() + "\n"
             with open(path, "w", encoding="utf-8") as output_file:
-                output_file.write(self.last_result)
+                output_file.write(self.last_result + "\n" + state_configs)

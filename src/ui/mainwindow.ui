@@ -331,16 +331,26 @@
           </property>
           <layout class="QFormLayout" name="algorithmLayout">
            <item row="0" column="0">
-            <widget class="QLabel" name="lblChoice">
+            <widget class="QLabel" name="lblObjChoice">
              <property name="text">
-              <string>Choice:</string>
+              <string>Objective choice:</string>
              </property>
             </widget>
            </item>
            <item row="0" column="1">
+            <widget class="QComboBox" name="comboObjective"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="lblAlgChoice">
+             <property name="text">
+              <string>Algorithm choice:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
             <widget class="QComboBox" name="comboAlgorithm"/>
            </item>
-           <item row="1" column="0" colspan="2">
+           <item row="2" column="0" colspan="2">
             <widget class="QLabel" name="lblConfiguration">
              <property name="text">
               <string>Configuration</string>
@@ -470,27 +480,34 @@
            </property>
            <layout class="QFormLayout" name="outputFormLayout">
             <item row="0" column="0">
+             <widget class="QLabel" name="lblObjectiveUsed">
+              <property name="text">
+               <string>Objective used:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
              <widget class="QLabel" name="lblAlgorithmUsed">
               <property name="text">
                <string>Algorithm used:</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="0">
+            <item row="2" column="0">
              <widget class="QLabel" name="lblConfigurationUsed">
               <property name="text">
                <string>Configuration:</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
+            <item row="3" column="0">
              <widget class="QLabel" name="lblStatistic">
               <property name="text">
                <string>Statistic:</string>
               </property>
              </widget>
             </item>
-            <item row="3" column="0">
+            <item row="4" column="0">
              <widget class="QLabel" name="lblStatisticDetail">
               <property name="text">
                <string/>
