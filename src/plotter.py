@@ -20,7 +20,7 @@ class Plotter(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.canvas)
 
-        self.setFixedHeight(200)
+        self.setFixedHeight(240)
         self.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Fixed,

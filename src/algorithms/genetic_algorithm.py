@@ -2,17 +2,16 @@ from src.model import Package, Truck, Placement, State, Orientation
 from src.moves import generateRandomState, generate_neighbor
 from src.geometry import is_valid_placement
 from src.objective import score
-import math
 import random
 from time import perf_counter
 
 def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state: State | None = None, population_count: int = 50, iteration_count: int = 100, objective_function=score) -> dict:
     start = perf_counter()
-    
+
     result = State(placements={})
     isResultValid = False
     resultValue = float('-inf')
-    
+
     # Generate initial population
     if initial_state is None:
         population = [generateRandomState(truck, packages) for _ in range(population_count)]
@@ -47,6 +46,7 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
 
     # Start iterating
     for iteration in range(iteration_count):
+        total_value = 0
         # Obtain values for each state
         for i in range(population_count):
             values[i] = objective_function(truck, packages, population[i])
@@ -60,23 +60,27 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
                     resultValue = values[i]
 
         # Normalize values
+        normalized_values = []
+        normalized_total_value = 0
         min_value = min(values)
         if min_value < 0:
             for i in range(population_count):
-                values[i] -= min_value
-            total_value -= min_value * population_count
+                normalized_values.append(values[i] - min_value)
+            normalized_total_value = total_value - min_value * population_count
 
         # Find fitness value
         fitness = [0.0 for _ in range(population_count)]
-        if total_value <= 0:
+        if normalized_total_value <= 0:
             fitness = [1/population_count for _ in range(population_count)]
         else:
             for i in range(population_count):
-                fitness[i] = values[i] / total_value
+                fitness[i] = normalized_values[i] / normalized_total_value
 
         # Cross-over
         crossover: list[State] = []
-        for _ in range(math.floor(population_count/2)):
+        offspring_count = population_count * 3 // 4 # Will generate only 75% of population
+        crossover_count = offspring_count // 2
+        for _ in range(crossover_count):
             offsprings: list[State] = [State(placements={}), State(placements={})]
 
             # Pick 2 parents from population with weight from fitness value
@@ -94,9 +98,15 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
 
             crossover += offsprings
 
-        # If population odd, add state with highest fitness value to offspring to maintain population_count
-        if population_count % 2 == 1:
-            crossover.append(population[index_highest])
+        # Populate crossover with highest valued states (25% elitism)
+        elite_count = population_count - len(crossover)
+        ranked_indices = sorted(
+            range(population_count),
+            key=lambda index: values[index],
+            reverse=True,
+        )
+        for index in ranked_indices[:elite_count]:
+            crossover.append(population[index])
 
         # Mutation (50/50 happens to each state that is invalid, will replace state to its random neighbor)
         for i in range(population_count):
@@ -105,16 +115,14 @@ def genetic_algorithm(truck: Truck, packages: dict[str, Package], initial_state:
 
         population = crossover
 
-        index_highest = -1
-        highest_value = float('-inf')
-        for i in range(population_count):
-            if highest_value < values[i]:
-                index_highest = i
-                highest_value = values[i]
+        next_values = [
+            objective_function(truck, packages, state)
+            for state in population
+        ]
         history.append({
             "iteration": iteration + 1,
-            "average_value": total_value/population_count,
-            "best_value": highest_value
+            "average_value": sum(next_values)/population_count,
+            "best_value": max(next_values)
         })
 
     for i in range(population_count):

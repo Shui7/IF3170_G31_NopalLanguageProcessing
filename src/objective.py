@@ -50,7 +50,7 @@ def score(truck: Truck, packages: dict[str, Package], state: State) -> float:
         if placement.z != 0 and support_value <= 0:
             total_value -= package.value * 1.3
         if fragile_value >= 0:
-            total_value -= fragile_value * size[2] * package.value * 1.5 # times height since fragile_value is 2D surface of package
+            total_value -= fragile_value * size[2] * value_per_cube * 1.5 # times height since fragile_value is 2D surface of package
 
     if truck.max_capacity > 0 and total_weight > truck.max_capacity:
         # The more difference between total_weight and max_capacity, the more severe the penalty
