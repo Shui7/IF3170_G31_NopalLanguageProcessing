@@ -464,6 +464,7 @@ class MainWindow(QMainWindow):
                     statistic += f" Iterations per restart:\t{result["iterations_per_restart"]}\n"
                 elif version == "Stochastic":
                     statistic += f" Iteration count:\t{result["iterations"]}\n"
+                statistic += f" Stop reason:\t{result["stop_reason"]}\n"
             elif algorithm == "Simulated Annealing":
                 statistic += f" Stuck count:\t{result["stagnant_count"]}\n"
             elif algorithm == "Genetic Algorithm":
