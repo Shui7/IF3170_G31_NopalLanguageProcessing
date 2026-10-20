@@ -456,10 +456,12 @@ class MainWindow(QMainWindow):
             if algorithm == "Hill Climbing":
                 if version == "Steepest Ascent":
                     statistic += f" Iteration count:\t{result["iterations"]}\n"
-                elif version == " Sideways Move":
+                elif version == "Sideways Move":
                     statistic += f" Iteration count:\t{result["iterations"]}\n"
-                elif version == " Random Restart":
+                    statistic += f" Sideways move count:\t{result["sideways_moves"]}\n"
+                elif version == "Random Restart":
                     statistic += f" Restart count:\t{result["restarts"]}\n"
+                    statistic += f" Iterations per restart:\t{result["iterations_per_restart"]}\n"
                 elif version == "Stochastic":
                     statistic += f" Iteration count:\t{result["iterations"]}\n"
             elif algorithm == "Simulated Annealing":
