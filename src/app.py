@@ -496,6 +496,7 @@ class MainWindow(QMainWindow):
                 self.plot_content_layout.addWidget(plotter)
 
             self.last_result = (
+                f"Objective: {objective_label}\n"
                 f"{algorithm_label}\n"
                 f"{configuration_text}\n"
                 "Statistic:\n"
