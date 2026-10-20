@@ -84,7 +84,7 @@ class StateVisualizer(QWidget):
              "#ff8000", "#ffbf00", "#bfff00", "#00ff00",
              "#00ffbf", "#00bfff", "#0080ff", "#0000ff", "#8000ff", 
              "#bf00ff", "#ff00ff", "#ff80ff", "#ffb0ff", "#ffffff", 
-             "#888888", "#444444", "#000000", "#800000", "#bf0000"
+             "#888888", "#444444", "#000000"
         ]
 
         placed_count = 0

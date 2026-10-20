@@ -1,0 +1,25 @@
+{
+  "truck": { "length": 100, "width": 60, "height": 60, "max_capacity": 400 },
+  "packages": [
+    { "id": "P1",  "length": 40, "width": 30, "height": 20, "weight": 25, "value": 120, "fragile": false },
+    { "id": "P2",  "length": 30, "width": 30, "height": 30, "weight": 40, "value": 200, "fragile": false },
+    { "id": "P3",  "length": 50, "width": 40, "height": 25, "weight": 55, "value": 300, "fragile": false },
+    { "id": "P4",  "length": 20, "width": 20, "height": 20, "weight": 10, "value": 60,  "fragile": true },
+    { "id": "P5",  "length": 35, "width": 25, "height": 15, "weight": 18, "value": 90,  "fragile": false },
+    { "id": "P6",  "length": 60, "width": 40, "height": 30, "weight": 70, "value": 450, "fragile": false },
+    { "id": "P7",  "length": 25, "width": 25, "height": 25, "weight": 22, "value": 110, "fragile": true },
+    { "id": "P8",  "length": 45, "width": 35, "height": 20, "weight": 38, "value": 180, "fragile": false },
+    { "id": "P9",  "length": 30, "width": 20, "height": 15, "weight": 12, "value": 70,  "fragile": true },
+    { "id": "P10", "length": 55, "width": 30, "height": 25, "weight": 48, "value": 260, "fragile": false },
+    { "id": "P11", "length": 40, "width": 40, "height": 40, "weight": 60, "value": 350, "fragile": false },
+    { "id": "P12", "length": 20, "width": 15, "height": 10, "weight": 5,  "value": 40,  "fragile": true },
+    { "id": "P13", "length": 50, "width": 50, "height": 30, "weight": 65, "value": 400, "fragile": false },
+    { "id": "P14", "length": 35, "width": 30, "height": 30, "weight": 35, "value": 170, "fragile": false },
+    { "id": "P15", "length": 25, "width": 20, "height": 20, "weight": 15, "value": 80,  "fragile": true },
+    { "id": "P16", "length": 60, "width": 30, "height": 20, "weight": 45, "value": 220, "fragile": false },
+    { "id": "P17", "length": 30, "width": 30, "height": 20, "weight": 28, "value": 130, "fragile": false },
+    { "id": "P18", "length": 45, "width": 40, "height": 35, "weight": 58, "value": 310, "fragile": false },
+    { "id": "P19", "length": 15, "width": 15, "height": 15, "weight": 6,  "value": 50,  "fragile": true },
+    { "id": "P20", "length": 40, "width": 25, "height": 25, "weight": 32, "value": 150, "fragile": false }
+  ]
+}
